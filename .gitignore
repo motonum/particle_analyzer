@@ -1,0 +1,6 @@
+*.tif
+.DS_Store
+dist
+assets
+**/__pycache__/**
+local.py
