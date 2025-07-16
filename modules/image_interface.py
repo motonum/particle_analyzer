@@ -19,4 +19,4 @@ class ImageInterface:
         return f"{self.OUTPUT_DIR_SEGMENTED}/{self.filename}.tif"
     
     def output_histogram_path(self, z: int):
-        return f"{self.OUTPUT_DIR_HISTOGRAM}/{self.filename}-{'full' if z == None else z}.png"
+        return f"{self.OUTPUT_DIR_HISTOGRAM}/{self.filename}-{'full' if z == None else f'z{z}'}.png"

@@ -287,34 +287,39 @@ class ParticleAnalyzer:
 
     def plot_diameter_histogram(
             self,
-            max_diameter,
             title="",
             z:int | None = None,
-            auto_z=False,
-            density=True,
+            auto_z: bool = False,
+            density: bool = True,
             xlim: tuple[float,float] | None = None,
             ylim:tuple[float,float] | None = None):
         """粒子の直径のヒストグラムをプロットする
 
         Parameters
         ----------
-        max_diameter: int
-            ヒストグラムで表示する最大直径
-        title: string = ""
+        title: str = ""
             ヒストグラムの上部に表示するタイトル
         z: int | None = None
-            指定したzスライスに存在する粒子をカウントする
+            指定したzスライスに存在する粒子をカウントする(zはone-based)
         auto_z: bool = False
             Trueのときは、Stackを下から見ていって最初に円が検出されたスライスの次のスライスをカウント対象とする
         density: bool = False
             Trueのとき、ヒストグラムの縦軸を相対度数とする
+        xlim: tuple[float, float]
+            グラフの横軸の表示範囲
+        ylim: tuple[float, float]
+            グラフの縦軸の表示範囲
         
         Returns
         -------
         None
         """
-        diameters = []
-        _z = z
+        diameters: list[float] = []
+
+        z_0based: int | None = None
+        if z:
+            z_0based = z-1
+
         if auto_z:
             for i, plane in enumerate(self.identified_circles_by_slice):
                 if len(plane):
@@ -323,35 +328,35 @@ class ParticleAnalyzer:
                             self.particle_repository[c.id].diameter_micron 
                             for c in self.identified_circles_by_slice[i+1]
                         ]
-                        _z = i+1
+                        z_0based = i+1
                     else:
                         diameters = [self.particle_repository[c.id].diameter_micron  for c in plane]
-                        _z = i
+                        z_0based = i
+                    z = z_0based+1
                     break
-        elif z in [k for k, v in enumerate(self.identified_circles_by_slice)]:
+        elif z_0based in [k for k, v in enumerate(self.identified_circles_by_slice)]:
             diameters = [
                 self.particle_repository[c.id].diameter_micron
-                for c in self.identified_circles_by_slice[z]
+                for c in self.identified_circles_by_slice[z_0based]
             ]
-            print(diameters)
         else:
             diameters = [p.diameter_micron for p in self.particle_repository.values()]
         if not diameters:
             print("No particles found to plot histogram.")
             return
             
-        bins = max_diameter * self.config.HISTOGRAM_BINS_PER_MICRON
         
-        plt.hist(diameters, range=(0, max_diameter), bins=bins, density=density)
+        max_diameter = max(diameters) if not xlim else xlim[1]
+        bins = max_diameter * self.config.HISTOGRAM_BINS_PER_MICRON
+        plt.hist(diameters, range=xlim, bins=bins, density=density)
         if title:
             plt.title(title, fontsize=14)
         plt.xlabel("Diameter (μm)", fontsize=12)
-        plt.ylabel("Relative Frequency", fontsize=12)
-        if ylim:  
+        plt.ylabel(f"{'Relative' if density else 'Absolute'} Frequency", fontsize=12)
+        if ylim:
             plt.ylim(ylim)
         if not os.path.exists(self.image_interface.OUTPUT_DIR_HISTOGRAM):
             os.makedirs(self.image_interface.OUTPUT_DIR_HISTOGRAM)
-        plt.savefig(self.image_interface.output_histogram_path(_z))
-        print(f"Histogram saved to {self.image_interface.output_histogram_path(_z)}")
-        print(f"z is {'full range' if _z == None else _z + 1}")
+        plt.savefig(self.image_interface.output_histogram_path(z))
+        print(f"Histogram saved to {self.image_interface.output_histogram_path(z)}")
         plt.close()
