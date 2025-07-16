@@ -1,5 +1,6 @@
 import cv2
 import os
+import csv
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy import ndimage as ndi
@@ -245,6 +246,59 @@ class ParticleAnalyzer:
             identified_circles_by_slice.append(newly_identified_circles)
         
         return identified_circles_by_slice
+    
+    
+    def _get_diameters(
+            self,
+            z:int | None = None,
+            auto_z: bool = False
+        ):
+        """粒子の直径のリストを作成する
+
+        Parameters
+        ----------
+        z: int | None = None
+            指定したzスライスに存在する粒子をカウントする(zはone-based)
+        auto_z: bool = False
+            Trueのときは、Stackを下から見ていって最初に円が検出されたスライスの次のスライスをカウント対象とする
+        
+        Returns
+        -------
+        diameters: list[float]
+            粒子直径のリスト
+        target_z: int
+            調査対象のzスライス（zはone-indexed）  
+            全粒子が対象のときは-1
+        """
+        diameters: list[float] = []
+
+        if z:
+            z -= 1
+
+        if auto_z:
+            for i, plane in enumerate(self.identified_circles_by_slice):
+                if len(plane):
+                    if i+1 in [k for k, v in enumerate(self.identified_circles_by_slice)]:
+                        diameters = [
+                            self.particle_repository[c.id].diameter_micron 
+                            for c in self.identified_circles_by_slice[i+1]
+                        ]
+                        z = i+1
+                    else:
+                        diameters = [self.particle_repository[c.id].diameter_micron  for c in plane]
+                        z = i
+                    break
+        elif z in [k for k, v in enumerate(self.identified_circles_by_slice)]:
+            diameters = [
+                self.particle_repository[c.id].diameter_micron
+                for c in self.identified_circles_by_slice[z]
+            ]
+        else:
+            diameters = [p.diameter_micron for p in self.particle_repository.values()]
+
+        target_z = None if z == None else z + 1
+
+        return diameters, target_z
 
 
     def run_analysis(self):
@@ -300,7 +354,7 @@ class ParticleAnalyzer:
         title: str = ""
             ヒストグラムの上部に表示するタイトル
         z: int | None = None
-            指定したzスライスに存在する粒子をカウントする(zはone-based)
+            カウント対象となる粒子の存在zスライスの位置(zはone-based)
         auto_z: bool = False
             Trueのときは、Stackを下から見ていって最初に円が検出されたスライスの次のスライスをカウント対象とする
         density: bool = False
@@ -314,37 +368,11 @@ class ParticleAnalyzer:
         -------
         None
         """
-        diameters: list[float] = []
+        diameters, target_z = self._get_diameters(z,auto_z)
 
-        z_0based: int | None = None
-        if z:
-            z_0based = z-1
-
-        if auto_z:
-            for i, plane in enumerate(self.identified_circles_by_slice):
-                if len(plane):
-                    if i+1 in [k for k, v in enumerate(self.identified_circles_by_slice)]:
-                        diameters = [
-                            self.particle_repository[c.id].diameter_micron 
-                            for c in self.identified_circles_by_slice[i+1]
-                        ]
-                        z_0based = i+1
-                    else:
-                        diameters = [self.particle_repository[c.id].diameter_micron  for c in plane]
-                        z_0based = i
-                    z = z_0based+1
-                    break
-        elif z_0based in [k for k, v in enumerate(self.identified_circles_by_slice)]:
-            diameters = [
-                self.particle_repository[c.id].diameter_micron
-                for c in self.identified_circles_by_slice[z_0based]
-            ]
-        else:
-            diameters = [p.diameter_micron for p in self.particle_repository.values()]
         if not diameters:
             print("No particles found to plot histogram.")
             return
-            
         
         max_diameter = max(diameters) if not xlim else xlim[1]
         bins = max_diameter * self.config.HISTOGRAM_BINS_PER_MICRON
@@ -357,6 +385,43 @@ class ParticleAnalyzer:
             plt.ylim(ylim)
         if not os.path.exists(self.image_interface.OUTPUT_DIR_HISTOGRAM):
             os.makedirs(self.image_interface.OUTPUT_DIR_HISTOGRAM)
-        plt.savefig(self.image_interface.output_histogram_path(z))
-        print(f"Histogram saved to {self.image_interface.output_histogram_path(z)}")
+        plt.savefig(self.image_interface.output_histogram_path(target_z))
+        print(f"Histogram saved to {self.image_interface.output_histogram_path(target_z)}")
         plt.close()
+
+
+    def output_diameter_csv(
+            self,
+            z:int | None = None,
+            auto_z: bool = False,
+            header: bool = True,
+        ):
+        """検出した粒子径のCSVファイルを出力する関数
+
+        与えられたzとauto_zに対応する粒子径のCSVを出力する。  
+        zとauto_zがいずれもデフォルト値のとき、zを限定せず全範囲の直径を出力する。
+
+        Parameters
+        ----------
+        z: int | None = None
+            カウント対象となる粒子の存在zスライスの位置(zはone-based)
+        auto_z: bool = False
+            Trueのときは、Stackを下から見ていって最初に円が検出されたスライスの次のスライスをカウント対象とする  
+        header: bool = True
+            CSVファイルのヘッダの表示をするかしないか
+
+        Returns
+        -------
+        None
+        """
+        diameters, target_z = self._get_diameters(z,auto_z)
+
+        if not os.path.exists(self.image_interface.OUTPUT_DIR_CSV):
+            os.makedirs(self.image_interface.OUTPUT_DIR_CSV)
+
+        with open(self.image_interface.output_csv_path(target_z), 'w') as f:
+            writer = csv.writer(f)
+            header and writer.writerow(["No.", "diameter[um]"])
+            writer.writerows([[i,d] for i,d in enumerate(diameters)])
+
+        print(f"CSV saved to {self.image_interface.output_csv_path(target_z)}")

@@ -17,7 +17,8 @@ def main():
         analyzer = ParticleAnalyzer(config, image_interface)
         analyzer.run_analysis()
         analyzer.output_particle_image()
-        analyzer.plot_diameter_histogram(title="", auto_z=False, density=False, xlim=(0,25))
+        analyzer.plot_diameter_histogram(title="", auto_z=True, density=False, xlim=(0,25))
+        analyzer.output_diameter_csv(auto_z=True)
 
 if __name__ == "__main__":
     main()
