@@ -43,6 +43,7 @@
 - Matplotlib
 - scikit-image
 - scikit-learn
+- tqdm
 
 これらのライブラリは、pip でインストールできます。
 
