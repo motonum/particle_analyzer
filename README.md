@@ -47,7 +47,7 @@
 これらのライブラリは、pip でインストールできます。
 
 ```bash
-pip install opencv-python numpy matplotlib scikit-image scikit-learn
+pip install opencv-python numpy matplotlib scikit-image scikit-learn tqdm
 ```
 
 ## 注意事項

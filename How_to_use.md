@@ -21,7 +21,7 @@
     これにより、必要なツールが一括でインストールされます。
 
     ```bash
-    pip install opencv-python numpy matplotlib scikit-image scikit-learn
+    pip install opencv-python numpy matplotlib scikit-image scikit-learn tqdm
     ```
 
     （もし`pip`というコマンドが無いとエラーが出た場合は、先にPython本体のインストールが必要です。その際は別途ご相談ください。）

@@ -3,6 +3,7 @@ import os
 import csv
 import numpy as np
 import matplotlib.pyplot as plt
+from tqdm import tqdm
 from scipy import ndimage as ndi
 from skimage.feature import peak_local_max
 from skimage.segmentation import watershed, mark_boundaries
@@ -10,6 +11,7 @@ from skimage.color import rgb2gray, gray2rgb
 from skimage.filters import threshold_otsu
 from skimage.util import img_as_ubyte
 from sklearn.neighbors import NearestNeighbors
+
 
 from modules.particle import Particle
 from modules.config import Config
@@ -304,7 +306,7 @@ class ParticleAnalyzer:
     def run_analysis(self):
         """解析を実行する"""
         # 1. 各スライスの粒子を検出
-        for img in self.image_stack:
+        for img in tqdm(self.image_stack, desc=f"Analyzing '{self.image_interface.filename}.tif'", leave=False, bar_format=f'{{l_bar}}{{bar}} | {{n_fmt}}/{{total_fmt}}'):
             binary_img = self._segment_slice(img)
             self.segmented_stack.append(binary_img)
             circles = self._fit_circles(binary_img)
