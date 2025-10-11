@@ -18,4 +18,4 @@ class Config:
     MIN_CIRCULARITY = 0.65
 
     # --- 出力設定 ---
-    HISTOGRAM_BINS_PER_MICRON = 2
+    DEFAULT_HISTOGRAM_BIN_WIDTH = 0.5  # ヒストグラムのビン幅（μm）

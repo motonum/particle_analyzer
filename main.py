@@ -1,4 +1,4 @@
-from modules import Config, ParticleAnalyzer, ImageInterface
+from modules import Config, ParticleAnalyzer, ImageInterface, BatchParticleAnalyzer
 
 
 """
@@ -7,22 +7,24 @@ from modules import Config, ParticleAnalyzer, ImageInterface
 """
 
 
+paths = [
+    "path/to/binary_image_stack_01.tif",
+    "path/to/binary_image_stack_02.tif",
+    "path/to/binary_image_stack_03.tif",
+]
+
+
 def main():
     """メイン処理"""
-    paths = [
-        "path/to/binary_image_stack.tif",
-    ]
-    for path in paths:
-        config = Config()
-        image_interface = ImageInterface(path)
-        analyzer = ParticleAnalyzer(config, image_interface)
-        analyzer.run_analysis()
-        analyzer.output_particle_image()
-        analyzer.plot_diameter_histogram(
-            title="", auto_z=True, density=False, xlim=(0, 25)
-        )
-        analyzer.output_diameter_csv(auto_z=True)
-        analyzer.print_summary([(None, 5), (None, 8), (5, 12), (8, 12)])
+    config = Config()
+    analyzers = [ParticleAnalyzer(config, ImageInterface(path)) for path in paths]
+    batch_analyzer = BatchParticleAnalyzer(analyzers, config)
+
+    batch_analyzer.run_analysis()
+    batch_analyzer.output_particle_image()
+    batch_analyzer.plot_diameter_histogram(add_title=True, density=True)
+    batch_analyzer.output_diameter_csv()
+    batch_analyzer.output_summary_csv()
 
 
 if __name__ == "__main__":
