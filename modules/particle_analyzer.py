@@ -78,9 +78,7 @@ class ParticleAnalyzer:
         fill_holes_structure = np.ones(config.FILL_HOLES_STRUCTURE_SIZE)
         filled = ndi.binary_fill_holes(binary, structure=fill_holes_structure)
 
-        morph_kernel = cv2.getStructuringElement(
-            cv2.MORPH_ELLIPSE, config.MORPHOLOGY_KERNEL_SIZE
-        )
+        morph_kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, config.MORPHOLOGY_KERNEL_SIZE)
         closed = cv2.morphologyEx(
             img_as_ubyte(filled),
             cv2.MORPH_CLOSE,
@@ -129,9 +127,7 @@ class ParticleAnalyzer:
         labels = watershed(-dist_transform, markers, mask=opened)
 
         # 結果を二値画像として返す
-        segmented_img = mark_boundaries(
-            gray2rgb(opened), labels, color=(0, 0, 0), mode="thin"
-        )
+        segmented_img = mark_boundaries(gray2rgb(opened), labels, color=(0, 0, 0), mode="thin")
         segmented_gray = rgb2gray(segmented_img)
         return img_as_ubyte(segmented_gray > threshold_otsu(segmented_gray))
 
@@ -152,9 +148,7 @@ class ParticleAnalyzer:
             検出された円の中心座標と半径のリスト
         """
 
-        contours, _ = cv2.findContours(
-            binary_img, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
-        )
+        contours, _ = cv2.findContours(binary_img, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
         detected_circles: list[Circle] = []
         for cnt in contours:
@@ -225,9 +219,7 @@ class ParticleAnalyzer:
         initial_circles: list[IdentifiedCircle] = []
         for circle in self.circles_by_slice[0]:
             particle = self._create_new_particle(0, circle, config)
-            initial_circles.append(
-                IdentifiedCircle(circle.coord, circle.radius, particle.id)
-            )
+            initial_circles.append(IdentifiedCircle(circle.coord, circle.radius, particle.id))
 
         identified_circles_by_slice = [initial_circles]
 
@@ -235,9 +227,7 @@ class ParticleAnalyzer:
         for i in range(1, len(self.circles_by_slice)):
             prev_slice_index = i - 1
             current_slice_circles = self.circles_by_slice[i]
-            prev_slice_identified_circles = identified_circles_by_slice[
-                prev_slice_index
-            ]
+            prev_slice_identified_circles = identified_circles_by_slice[prev_slice_index]
 
             newly_identified_circles = []
 
@@ -257,9 +247,7 @@ class ParticleAnalyzer:
 
                     # 最近傍の粒子情報を取得
                     closest_particle_index: int = index[0][0]
-                    prev_particle_info = prev_slice_identified_circles[
-                        closest_particle_index
-                    ]
+                    prev_particle_info = prev_slice_identified_circles[closest_particle_index]
 
                     # 相互最近傍であるか、かつ距離が妥当かをチェック
                     # (この実装は簡略化のため、一方向の最近傍のみチェック)
@@ -310,19 +298,14 @@ class ParticleAnalyzer:
         if auto_z:
             for i, plane in enumerate(self.identified_circles_by_slice):
                 if len(plane):
-                    if i + 1 in [
-                        k for k, v in enumerate(self.identified_circles_by_slice)
-                    ]:
+                    if i + 1 in [k for k, v in enumerate(self.identified_circles_by_slice)]:
                         diameters = [
                             self.particle_repository[c.id].diameter_micron
                             for c in self.identified_circles_by_slice[i + 1]
                         ]
                         z = i + 1
                     else:
-                        diameters = [
-                            self.particle_repository[c.id].diameter_micron
-                            for c in plane
-                        ]
+                        diameters = [self.particle_repository[c.id].diameter_micron for c in plane]
                         z = i
                     break
         elif z in [k for k, v in enumerate(self.identified_circles_by_slice)]:
@@ -333,7 +316,7 @@ class ParticleAnalyzer:
         else:
             diameters = [p.diameter_micron for p in self.particle_repository.values()]
 
-        target_z = None if z == None else z + 1
+        target_z = None if z is None else z + 1
 
         return diameters, target_z
 
@@ -401,9 +384,9 @@ class ParticleAnalyzer:
         # 1. 各スライスの粒子を検出
         for img in tqdm(
             self.image_stack,
-            desc=f"Analyzing slices",
+            desc="Analyzing slices",
             leave=False,
-            bar_format=f"{{l_bar}}{{bar}} | {{n_fmt}}/{{total_fmt}}",
+            bar_format="{{l_bar}}{{bar}} | {{n_fmt}}/{{total_fmt}}",
         ):
             binary_img = self._segment_slice(img, config)
             self.segmented_stack.append(binary_img)
@@ -422,28 +405,20 @@ class ParticleAnalyzer:
             for c_info in slice_circles:
                 particle = self.particle_repository[c_info.id]
                 coord_int = tuple(int(pos) for pos in c_info.coord)
-                cv2.circle(
-                    canvas, coord_int, int(c_info.radius), particle.color, cv2.FILLED
-                )
+                cv2.circle(canvas, coord_int, int(c_info.radius), particle.color, cv2.FILLED)
             output_stack.append(canvas)
 
         if not os.path.exists(self.image_interface.OUTPUT_DIR_DETECTED):
             os.makedirs(self.image_interface.OUTPUT_DIR_DETECTED)
 
         cv2.imwritemulti(self.image_interface.output_detected_path, output_stack)
-        print(
-            f"Detected particles image saved to {self.image_interface.output_detected_path}"
-        )
+        print(f"Detected particles image saved to {self.image_interface.output_detected_path}")
 
         if not os.path.exists(self.image_interface.OUTPUT_DIR_SEGMENTED):
             os.makedirs(self.image_interface.OUTPUT_DIR_SEGMENTED)
 
-        cv2.imwritemulti(
-            self.image_interface.output_segmented_path, self.segmented_stack
-        )
-        print(
-            f"Segmented particles image saved to {self.image_interface.output_segmented_path}"
-        )
+        cv2.imwritemulti(self.image_interface.output_segmented_path, self.segmented_stack)
+        print(f"Segmented particles image saved to {self.image_interface.output_segmented_path}")
 
     def plot_diameter_histogram(
         self,
@@ -499,9 +474,7 @@ class ParticleAnalyzer:
         if not os.path.exists(self.image_interface.OUTPUT_DIR_HISTOGRAM):
             os.makedirs(self.image_interface.OUTPUT_DIR_HISTOGRAM)
         plt.savefig(self.image_interface.output_histogram_path(target_z))
-        print(
-            f"Histogram saved to {self.image_interface.output_histogram_path(target_z)}"
-        )
+        print(f"Histogram saved to {self.image_interface.output_histogram_path(target_z)}")
         plt.close()
 
     def output_diameter_csv(
@@ -587,18 +560,14 @@ class ParticleAnalyzer:
                         writer.writerow(
                             [
                                 f"(,{r[1]}]",
-                                len([d for d in diameters if d <= r[1]])
-                                / len(diameters)
-                                * 100,
+                                len([d for d in diameters if d <= r[1]]) / len(diameters) * 100,
                             ]
                         )
                     elif r[1] is None:
                         writer.writerow(
                             [
                                 f"[{r[0]},)",
-                                len([d for d in diameters if r[0] <= d])
-                                / len(diameters)
-                                * 100,
+                                len([d for d in diameters if r[0] <= d]) / len(diameters) * 100,
                             ]
                         )
                     elif r[0] > r[1]:
@@ -613,9 +582,7 @@ class ParticleAnalyzer:
                             ]
                         )
 
-        print(
-            f"Summary CSV saved to {self.image_interface.output_summary_path(target_z)}"
-        )
+        print(f"Summary CSV saved to {self.image_interface.output_summary_path(target_z)}")
 
     def print_summary(
         self,
@@ -671,8 +638,6 @@ class ParticleAnalyzer:
                 else:
                     print(
                         f"[{r[0]},{r[1]}]: ",
-                        len([d for d in diameters if r[0] <= d <= r[1]])
-                        / len(diameters)
-                        * 100,
+                        len([d for d in diameters if r[0] <= d <= r[1]]) / len(diameters) * 100,
                     )
         print("-------")
