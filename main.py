@@ -6,6 +6,7 @@ from modules import Config, ParticleAnalyzer, ImageInterface
 微調整するときはここか modules/config.py を編集する。
 """
 
+
 def main():
     """メイン処理"""
     paths = [
@@ -17,9 +18,12 @@ def main():
         analyzer = ParticleAnalyzer(config, image_interface)
         analyzer.run_analysis()
         analyzer.output_particle_image()
-        analyzer.plot_diameter_histogram(title="", auto_z=True, density=False, xlim=(0,25))
+        analyzer.plot_diameter_histogram(
+            title="", auto_z=True, density=False, xlim=(0, 25)
+        )
         analyzer.output_diameter_csv(auto_z=True)
-        analyzer.print_summary([(None,5), (None,8), (5,12), (8,12)])
+        analyzer.print_summary([(None, 5), (None, 8), (5, 12), (8, 12)])
+
 
 if __name__ == "__main__":
     main()
