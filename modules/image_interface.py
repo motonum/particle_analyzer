@@ -6,6 +6,7 @@ class ImageInterface:
     OUTPUT_DIR_SEGMENTED = "dist/segmented"
     OUTPUT_DIR_HISTOGRAM = "dist/histogram"
     OUTPUT_DIR_CSV = "dist/csv"
+    OUTPUT_DIR_SUMMARY = "dist/summary"
 
     def __init__(self, image_path: str):
         self.img_path = image_path
@@ -24,3 +25,6 @@ class ImageInterface:
 
     def output_csv_path(self, z: int | None):
         return f"{self.OUTPUT_DIR_CSV}/{self.filename}-{'full' if z == None else f'z{z}'}.csv"
+    
+    def output_summary_path(self, z: int | None):
+        return f"{self.OUTPUT_DIR_SUMMARY}/{self.filename}-{'full' if z == None else f'z{z}'}.csv"

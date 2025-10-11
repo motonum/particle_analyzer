@@ -427,6 +427,61 @@ class ParticleAnalyzer:
             writer.writerows([[i,d] for i,d in enumerate(diameters)])
 
         print(f"CSV saved to {self.image_interface.output_csv_path(target_z)}")
+
+    
+    def output_summary_csv(
+            self,
+            research_ranges: list[tuple[float | None, float | None]] | None = None,
+            z:int | None = None,
+            auto_z: bool = False
+            ):
+        """粒子解析のサマリをCSVファイルとして出力する関数
+
+        直径の平均、標準偏差、最大値、最小値、中央値、全粒子数を出力する。
+        また、research_rangesに範囲を指定した場合、その範囲に含まれる粒子の割合(%)も出力する。
+
+        Parameters
+        ----------
+        research_ranges: list[tuple[float | None, float | None]] | None = None
+            粒子径の範囲を指定するタプルのリスト。Noneを指定すると上限・下限なしを意味する。  
+            例: [(None,5), (5,10), (10,None)]
+        z: int | None = None
+            カウント対象となる粒子の存在zスライスの位置(zはone-based)
+        auto_z: bool = False
+            Trueのときは、Stackを下から見ていって最初に円が検出されたスライスの次のスライスをカウント対象とする
+
+        Returns
+        -------
+        None
+        """
+        diameters, target_z = self._get_diameters(z,auto_z)
+
+        if not os.path.exists(self.image_interface.OUTPUT_DIR_SUMMARY):
+            os.makedirs(self.image_interface.OUTPUT_DIR_SUMMARY)
+
+        with open(self.image_interface.output_summary_path(target_z), 'w') as f:
+            writer = csv.writer(f)
+            writer.writerow(["Filename", self.image_interface.filename])
+            writer.writerow(["Total Particles", len(diameters)])
+            writer.writerow(["Mean Diameter [μm]", np.average(diameters)])
+            writer.writerow(["Standard Deviation [μm]", np.std(diameters)])
+            writer.writerow(["Median Diameter [μm]", np.median(diameters)])
+            writer.writerow(["Min Diameter [μm]", min(diameters)])
+            writer.writerow(["Max Diameter [μm]", max(diameters)])
+            if research_ranges is not None:
+                for r in research_ranges:
+                    if r == (None, None):
+                        continue
+                    elif r[0] is None:
+                        writer.writerow([f"(,{r[1]}]", len([d for d in diameters if d<=r[1]])/len(diameters)*100])
+                    elif r[1] is None:
+                        writer.writerow([f"[{r[0]},)", len([d for d in diameters if r[0]<=d])/len(diameters)*100])
+                    elif r[0] > r[1]:
+                        writer.writerow([f"[{r[1]},{r[0]}]", "Error: Invalid range"])
+                    else:
+                        writer.writerow([f"[{r[0]},{r[1]}]", len([d for d in diameters if r[0]<=d<=r[1]])/len(diameters)*100])
+
+        print(f"Summary CSV saved to {self.image_interface.output_summary_path(target_z)}")
     
     def print_summary(
             self,
