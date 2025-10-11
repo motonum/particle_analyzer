@@ -425,3 +425,52 @@ class ParticleAnalyzer:
             writer.writerows([[i,d] for i,d in enumerate(diameters)])
 
         print(f"CSV saved to {self.image_interface.output_csv_path(target_z)}")
+    
+    def print_summary(
+            self,
+            research_ranges: list[tuple[float | None, float | None]] | None = None,
+            z:int | None = None,
+            auto_z: bool = False,
+            ):
+        """粒子解析のサマリをコンソールに出力する関数
+        直径の平均、標準偏差、最大値、最小値、中央値、全粒子数を出力する。
+        また、research_rangesに範囲を指定した場合、その範囲に含まれる粒子の割合(%)も出力する。
+
+        Parameters
+        ----------
+        research_ranges: list[tuple[float | None, float | None]] | None = None
+            粒子径の範囲を指定するタプルのリスト。Noneを指定すると上限・下限なしを意味する。  
+            例: [(None,5), (5,10), (10,None)]
+        z: int | None = None
+            カウント対象となる粒子の存在zスライスの位置(zはone-based)
+        auto_z: bool = False
+            Trueのときは、Stackを下から見ていって最初に円が検出されたスライスの次のスライスをカウント対象とする
+        Returns
+        -------
+        None
+        """
+
+        diameters, _ = self._get_diameters(z,auto_z)
+
+        print("-------")
+        print(self.image_interface.filename)
+        print("全粒子数: ",len(diameters))
+        print("平均: ",np.average(diameters))
+        print("標準偏差: ",np.std(diameters))
+        print("中央値: ",np.median(diameters))
+        print("最小値: ",min(diameters))
+        print("最大値: ",max(diameters))
+
+        if research_ranges is not None:
+            for r in research_ranges:
+                if r == (None, None):
+                    continue
+                elif r[0] is None:
+                    print(f"(,{r[1]}]: ",len([d for d in diameters if d<=r[1]])/len(diameters)*100)
+                elif r[1] is None:
+                    print(f"[{r[0]},): ",len([d for d in diameters if r[0]<=d])/len(diameters)*100)
+                elif r[0] > r[1]:
+                    print(f"[{r[1]},{r[0]}]: ","\033[31mError: Invalid range\033[0m")
+                else:
+                    print(f"[{r[0]},{r[1]}]: ",len([d for d in diameters if r[0]<=d<=r[1]])/len(diameters)*100)
+        print("-------")
