@@ -54,5 +54,5 @@ pip install opencv-python numpy matplotlib scikit-image scikit-learn tqdm
 ## 注意事項
 
 - 入力する TIFF 画像は、二値化されたものであることを想定しています。
-  - 内部的に[大津の二値化](https://ja.wikipedia.org/wiki/%E5%A4%A7%E6%B4%A5%E3%81%AE%E4%BA%8C%E5%80%A4%E5%8C%96%E6%B3%95 "大津の二値化法")をしているため二値化しなくても一応動作はしますが、その場合は解析結果が妥当であるかを`dist/detected`などから確認してください。
+  - 内部的に[大津の二値化](https://ja.wikipedia.org/wiki/%E5%A4%A7%E6%B4%A5%E3%81%AE%E4%BA%8C%E5%80%A4%E5%8C%96%E6%B3%95 "大津の二値化法 - Wikipedia")をしているため二値化しなくても一応動作はしますが、その場合は解析結果が妥当であるかを`dist/detected`などから確認してください。
 - `main.py` で `auto_z=True` を設定すると、粒子が最初に現れるスライスの次のスライスが自動的に解析対象となります。特定の z スライスを解析したい場合は、`z` パラメータを指定してください。
