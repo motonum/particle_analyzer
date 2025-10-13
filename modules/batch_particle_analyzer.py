@@ -11,14 +11,17 @@ class BatchParticleAnalyzer:
 
     def run_analysis(self):
         with tqdm(
-            total=len(self.particle_analyzers), desc="Analyzing", leave=True
+            total=len(self.particle_analyzers),
+            desc="Analyzing",
+            leave=True,
+            bar_format=f"{{l_bar}}{{bar}} | {{n_fmt}}/{{total_fmt}}",
         ) as pbar:
             for analyzer in self.particle_analyzers:
-                pbar.set_description(
-                    f"Analyzing '{analyzer.image_interface.filename}'.tif"
-                )
+                pbar.set_description(f"Analyzing '{analyzer.image_interface.filename}.tif'")
                 analyzer.run_analysis()
                 pbar.update(1)
+            pbar.set_description(f"Completed")
+            pbar.close()
 
     def output_summary_csv(self, ranges: list[tuple[int | None, int | None]]):
         for analyzer in self.particle_analyzers:
