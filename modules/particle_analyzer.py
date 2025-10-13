@@ -27,7 +27,8 @@ class ParticleAnalyzer:
 
     """
 
-    def __init__(self, image_interface: ImageInterface):
+    def __init__(self, config: Config, image_interface: ImageInterface):
+        self.config = config
         self.image_interface: ImageInterface = image_interface
         self.image_stack = self._load_images(image_interface.img_path)
         self.segmented_stack = []
@@ -53,7 +54,7 @@ class ParticleAnalyzer:
         _, images = cv2.imreadmulti(filename=path, mats=[], flags=cv2.IMREAD_GRAYSCALE)
         return images
 
-    def _segment_slice(self, img, config: Config):
+    def _segment_slice(self, img):
         """単一の画像をセグメンテーションする
 
         穴埋め、ノイズ除去、Watershedを実行し、粒子ごとに切り分ける
@@ -71,31 +72,31 @@ class ParticleAnalyzer:
         """
 
         # 前処理
-        # blurred = cv2.GaussianBlur(img, config.GAUSSIAN_BLUR_KERNEL, 0)
+        # blurred = cv2.GaussianBlur(img, self.config.GAUSSIAN_BLUR_KERNEL, 0)
         binary = img_as_ubyte(img > threshold_otsu(img))
 
         # ノイズ除去
-        fill_holes_structure = np.ones(config.FILL_HOLES_STRUCTURE_SIZE)
+        fill_holes_structure = np.ones(self.config.FILL_HOLES_STRUCTURE_SIZE)
         filled = ndi.binary_fill_holes(binary, structure=fill_holes_structure)
 
-        morph_kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, config.MORPHOLOGY_KERNEL_SIZE)
+        morph_kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, self.config.MORPHOLOGY_KERNEL_SIZE)
         closed = cv2.morphologyEx(
             img_as_ubyte(filled),
             cv2.MORPH_CLOSE,
             morph_kernel,
-            iterations=config.MORPHOLOGY_ITERATIONS,
+            iterations=self.config.MORPHOLOGY_ITERATIONS,
         )
         opened = cv2.morphologyEx(
             closed,
             cv2.MORPH_OPEN,
             morph_kernel,
-            iterations=config.MORPHOLOGY_ITERATIONS,
+            iterations=self.config.MORPHOLOGY_ITERATIONS,
         )
 
         # Watershedアルゴリズム
         dist_transform = ndi.distance_transform_edt(opened)
-        min_dist = config.DOTS_PER_MICRON * config.PEAK_MIN_DISTANCE_RATIO
-        thresh_abs = config.DOTS_PER_MICRON * config.PEAK_THRESHOLD_RATIO
+        min_dist = self.config.DOTS_PER_MICRON * self.config.PEAK_MIN_DISTANCE_RATIO
+        thresh_abs = self.config.DOTS_PER_MICRON * self.config.PEAK_THRESHOLD_RATIO
 
         local_max_coords = peak_local_max(
             dist_transform,
@@ -131,7 +132,7 @@ class ParticleAnalyzer:
         segmented_gray = rgb2gray(segmented_img)
         return img_as_ubyte(segmented_gray > threshold_otsu(segmented_gray))
 
-    def _fit_circles(self, binary_img, config: Config):
+    def _fit_circles(self, binary_img):
         """二値画像から円を検出し、フィルタリングする
 
         セグメンテーションされた粒子像に対し輪郭検出し円でフィッティングし、
@@ -166,8 +167,8 @@ class ParticleAnalyzer:
                 continue
             circularity = 4 * np.pi * (area / (perimeter**2))
 
-            min_radius = config.MIN_DIAMETER_MICRON / 2 * config.DOTS_PER_MICRON
-            if radius < min_radius or circularity < config.MIN_CIRCULARITY:
+            min_radius = self.config.MIN_DIAMETER_MICRON / 2 * self.config.DOTS_PER_MICRON
+            if radius < min_radius or circularity < self.config.MIN_CIRCULARITY:
                 continue
 
             detected_circles.append(Circle((x, y), radius))
@@ -178,7 +179,7 @@ class ParticleAnalyzer:
         """ランダムな色のtuple (r,g,b) を生成する関数"""
         return tuple(np.random.randint(0, 256, 3).tolist())
 
-    def _create_new_particle(self, slice_index: int, circle: Circle, config: Config):
+    def _create_new_particle(self, slice_index: int, circle: Circle):
         particle_id = self.next_particle_id
         color = self._generate_random_color()
         particle = Particle(
@@ -187,13 +188,13 @@ class ParticleAnalyzer:
             circle.radius,
             circle.coord,
             color,
-            config.DOTS_PER_MICRON,
+            self.config.DOTS_PER_MICRON,
         )
         self.particle_repository[particle_id] = particle
         self.next_particle_id += 1
         return particle
 
-    def _track_particles(self, config: Config):
+    def _track_particles(self):
         """スライス間で粒子を追跡する
 
         連続する2枚のスライス像を見て、中心が相互最近傍の点であり、半径が大きい方の円の中心座標が、
@@ -218,7 +219,7 @@ class ParticleAnalyzer:
         # 最初のスライスを初期化
         initial_circles: list[IdentifiedCircle] = []
         for circle in self.circles_by_slice[0]:
-            particle = self._create_new_particle(0, circle, config)
+            particle = self._create_new_particle(0, circle)
             initial_circles.append(IdentifiedCircle(circle.coord, circle.radius, particle.id))
 
         identified_circles_by_slice = [initial_circles]
@@ -234,10 +235,8 @@ class ParticleAnalyzer:
             if not prev_slice_identified_circles:
                 # 前のスライスに粒子がない場合、すべて新しい粒子として登録
                 for circle in current_slice_circles:
-                    particle = self._create_new_particle(i, circle, config)
-                    newly_identified_circles.append(
-                        IdentifiedCircle(circle.coord, circle.radius, particle.id)
-                    )
+                    particle = self._create_new_particle(i, circle)
+                    newly_identified_circles.append(IdentifiedCircle(circle.coord, circle.radius, particle.id))
             else:
                 prev_coords = np.array([c.coord for c in prev_slice_identified_circles])
                 nn = NearestNeighbors(n_neighbors=1, algorithm="auto").fit(prev_coords)
@@ -255,18 +254,12 @@ class ParticleAnalyzer:
                     min_radius_threshold = min(circle.radius, prev_particle_info.radius)
                     if dist[0][0] < min_radius_threshold:
                         particle_id = prev_particle_info.id
-                        self.particle_repository[particle_id].add_slice(
-                            i, circle.radius, circle.coord
-                        )
-                        newly_identified_circles.append(
-                            IdentifiedCircle(circle.coord, circle.radius, particle_id)
-                        )
+                        self.particle_repository[particle_id].add_slice(i, circle.radius, circle.coord)
+                        newly_identified_circles.append(IdentifiedCircle(circle.coord, circle.radius, particle_id))
                     else:
                         # 新しい粒子として登録
-                        particle = self._create_new_particle(i, circle, config)
-                        newly_identified_circles.append(
-                            IdentifiedCircle(circle.coord, circle.radius, particle.id)
-                        )
+                        particle = self._create_new_particle(i, circle)
+                        newly_identified_circles.append(IdentifiedCircle(circle.coord, circle.radius, particle.id))
 
             identified_circles_by_slice.append(newly_identified_circles)
 
@@ -309,10 +302,7 @@ class ParticleAnalyzer:
                         z = i
                     break
         elif z in [k for k, v in enumerate(self.identified_circles_by_slice)]:
-            diameters = [
-                self.particle_repository[c.id].diameter_micron
-                for c in self.identified_circles_by_slice[z]
-            ]
+            diameters = [self.particle_repository[c.id].diameter_micron for c in self.identified_circles_by_slice[z]]
         else:
             diameters = [p.diameter_micron for p in self.particle_repository.values()]
 
@@ -342,7 +332,6 @@ class ParticleAnalyzer:
 
     def calc_mode_bin(
         self,
-        config: Config,
         bin_width: float | None = None,
         density: bool = False,
         z: int | None = None,
@@ -369,28 +358,27 @@ class ParticleAnalyzer:
             最頻値の出現数(個)または相対度数
         """
         diameters, _ = self._get_diameters(z, auto_z)
-        step = config.DEFAULT_HISTOGRAM_BIN_WIDTH if not bin_width else bin_width
+        step = self.config.DEFAULT_HISTOGRAM_BIN_WIDTH if not bin_width else bin_width
         bins = math.ceil(max(diameters) / step) + 1
         range = (0.0, int(step * bins))
         hist, _ = np.histogram(diameters, bins=bins, density=density, range=range)
         mode_index = np.argmax(hist)
-        print(step, mode_index)
         mode_diameter = (mode_index * step + (mode_index + 1) * step) / 2
         quantity = hist[mode_index]
         return mode_diameter, quantity
 
-    def run_analysis(self, config: Config):
+    def run_analysis(self):
         """解析を実行する"""
         # 1. 各スライスの粒子を検出
         for img in tqdm(
             self.image_stack,
             desc="Analyzing slices",
             leave=False,
-            bar_format="{{l_bar}}{{bar}} | {{n_fmt}}/{{total_fmt}}",
+            bar_format=f"{{l_bar}}{{bar}} | {{n_fmt}}/{{total_fmt}}",
         ):
-            binary_img = self._segment_slice(img, config)
+            binary_img = self._segment_slice(img)
             self.segmented_stack.append(binary_img)
-            circles = self._fit_circles(binary_img, config)
+            circles = self._fit_circles(binary_img)
             self.circles_by_slice.append(circles)
 
         # 2. スライス間で粒子を追跡
@@ -422,7 +410,6 @@ class ParticleAnalyzer:
 
     def plot_diameter_histogram(
         self,
-        config: Config,
         title="",
         z: int | None = None,
         auto_z: bool = False,
@@ -457,11 +444,11 @@ class ParticleAnalyzer:
         diameters, target_z = self._get_diameters(z, auto_z)
 
         if not diameters:
-            print("No particles found to plot histogram.")
+            print("\033[31mNo particles found to plot histogram.\033[0m")
             return
 
         max_diameter = max(diameters) if not xlim else xlim[1]
-        step = config.DEFAULT_HISTOGRAM_BIN_WIDTH if not bin_width else bin_width
+        step = self.config.DEFAULT_HISTOGRAM_BIN_WIDTH if not bin_width else bin_width
         bins = math.ceil(max_diameter / step) + 1
         x_range = (0, int(step * bins)) if not xlim else xlim
         plt.hist(diameters, range=x_range, bins=bins, density=density)
@@ -554,6 +541,7 @@ class ParticleAnalyzer:
             writer.writerow(["Max Diameter [μm]", max(diameters)])
             if research_ranges is not None:
                 for r in research_ranges:
+
                     if r == (None, None):
                         continue
                     elif r[0] is None:
@@ -576,9 +564,7 @@ class ParticleAnalyzer:
                         writer.writerow(
                             [
                                 f"[{r[0]},{r[1]}]",
-                                len([d for d in diameters if r[0] <= d <= r[1]])
-                                / len(diameters)
-                                * 100,
+                                len([d for d in diameters if r[0] <= d <= r[1]]) / len(diameters) * 100,
                             ]
                         )
 

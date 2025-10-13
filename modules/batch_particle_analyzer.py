@@ -32,9 +32,7 @@ class BatchParticleAnalyzer:
             analyzer.output_particle_image()
 
     def get_max_diameter(self, z: int | None = None, auto_z: bool = False) -> float:
-        return max(
-            analyzer.get_max_diameter(z, auto_z) for analyzer in self.particle_analyzers
-        )
+        return max(analyzer.get_max_diameter(z, auto_z) for analyzer in self.particle_analyzers)
 
     def plot_diameter_histogram(
         self,
@@ -53,12 +51,7 @@ class BatchParticleAnalyzer:
 
         # ylimを各画像の最大値に合わせる場合、全画像の最大値を取得
         y_limit = (
-            max(
-                [
-                    analyzer.calc_mode_bin(step, density, z, auto_z)[1]
-                    for analyzer in self.particle_analyzers
-                ]
-            )
+            max([analyzer.calc_mode_bin(step, density, z, auto_z)[1] for analyzer in self.particle_analyzers])
             if ylim is None
             else ylim[1]
         )
@@ -66,9 +59,7 @@ class BatchParticleAnalyzer:
 
         for analyzer in self.particle_analyzers:
             title = analyzer.image_interface.filename if add_title else ""
-            analyzer.plot_diameter_histogram(
-                title, z, auto_z, density, x_range, y_range, bin_width
-            )
+            analyzer.plot_diameter_histogram(title, z, auto_z, density, x_range, y_range, bin_width)
 
     def output_diameter_csv(self, auto_z: bool = True, header: bool = True):
         for analyzer in self.particle_analyzers:
