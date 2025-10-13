@@ -39,7 +39,7 @@ class BatchParticleAnalyzer:
         add_title: bool = True,
         z: float | None = None,
         auto_z: bool = False,
-        density: bool = False,
+        density: bool = True,
         xlim: tuple[float, float] | None = None,
         ylim: tuple[float, float] | None = None,
         bin_width: float | None = None,
