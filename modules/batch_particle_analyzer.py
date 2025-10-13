@@ -5,11 +5,26 @@ from modules.particle_analyzer import ParticleAnalyzer, Config
 
 
 class BatchParticleAnalyzer:
+    """複数の粒子解析を一括で実行するクラス
+
+    複数のParticleAnalyzerインスタンスを保持し、それぞれの解析や結果出力を一括で実行する。
+    また、複数の解析結果をまとめて、正規化されたヒストグラムやサマリーを作成する機能も提供する。
+    """
+
     def __init__(self, particle_analyzers: list[ParticleAnalyzer], config: Config):
+        """
+        Parameters
+        ----------
+        particle_analyzers : list[ParticleAnalyzer]
+            実行対象のParticleAnalyzerインスタンスのリスト
+        config : Config
+            解析に使用する設定オブジェクト
+        """
         self.particle_analyzers = particle_analyzers
         self.config = config
 
     def run_analysis(self):
+        """登録されているすべてのParticleAnalyzerで解析を実行する"""
         with tqdm(
             total=len(self.particle_analyzers),
             desc="Analyzing",
@@ -24,14 +39,36 @@ class BatchParticleAnalyzer:
             pbar.close()
 
     def output_summary_csv(self, ranges: list[tuple[int | None, int | None]]):
+        """登録されているすべてのParticleAnalyzerでサマリーCSVを出力する
+
+        Parameters
+        ----------
+        ranges : list[tuple[int | None, int | None]]
+            集計対象とする直径の範囲を指定するタプルのリスト
+        """
         for analyzer in self.particle_analyzers:
             analyzer.output_summary_csv(ranges)
 
     def output_particle_image(self):
+        """登録されているすべてのParticleAnalyzerで粒子検出画像を出力する"""
         for analyzer in self.particle_analyzers:
             analyzer.output_particle_image()
 
     def get_max_diameter(self, z: int | None = None, auto_z: bool = False) -> float:
+        """全解析結果の中から最大の粒子直径を取得する
+
+        Parameters
+        ----------
+        z : int | None = None
+            直径を取得するzスライスを指定
+        auto_z : bool = False
+            Trueの場合、粒子が最初に現れるスライスの次のスライスを対象とする
+
+        Returns
+        -------
+        float
+            最大の粒子直径 (μm)
+        """
         return max(analyzer.get_max_diameter(z, auto_z) for analyzer in self.particle_analyzers)
 
     def plot_diameter_histogram(
@@ -44,6 +81,27 @@ class BatchParticleAnalyzer:
         ylim: tuple[float, float] | None = None,
         bin_width: float | None = None,
     ):
+        """全解析結果の直径ヒストグラムを、スケールを統一してプロットする
+
+        y軸の表示範囲を全画像で統一し、比較しやすくしたヒストグラムを出力する。
+
+        Parameters
+        ----------
+        add_title : bool = True
+            グラフにタイトルを追加するかどうか
+        z : float | None = None
+            直径を取得するzスライスを指定
+        auto_z : bool = False
+            Trueの場合、粒子が最初に現れるスライスの次のスライスを対象とする
+        density : bool = True
+            Trueの場合、ヒストグラムの縦軸を相対度数とする
+        xlim : tuple[float, float] | None = None
+            グラフの横軸の表示範囲
+        ylim : tuple[float, float] | None = None
+            グラフの縦軸の表示範囲
+        bin_width : float | None = None
+            ヒストグラムのビン幅 (μm)
+        """
         limit_diameter = self.get_max_diameter(z, auto_z) if not xlim else xlim[1]
         step = self.config.DEFAULT_HISTOGRAM_BIN_WIDTH if not bin_width else bin_width
         bins = math.ceil(limit_diameter / step)
@@ -62,5 +120,14 @@ class BatchParticleAnalyzer:
             analyzer.plot_diameter_histogram(title, z, auto_z, density, x_range, y_range, bin_width)
 
     def output_diameter_csv(self, auto_z: bool = True, header: bool = True):
+        """登録されているすべてのParticleAnalyzerで直径の生データCSVを出力する
+
+        Parameters
+        ----------
+        auto_z : bool = True
+            Trueの場合、粒子が最初に現れるスライスの次のスライスを対象とする
+        header : bool = True
+            CSVにヘッダーを付けるかどうか
+        """
         for analyzer in self.particle_analyzers:
             analyzer.output_diameter_csv(auto_z, header)
