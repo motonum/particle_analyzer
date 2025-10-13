@@ -22,7 +22,7 @@ def main():
 
     batch_analyzer.run_analysis()
     batch_analyzer.output_particle_image()
-    batch_analyzer.plot_diameter_histogram(add_title=True, density=True)
+    batch_analyzer.plot_diameter_histogram()
     batch_analyzer.output_diameter_csv()
     batch_analyzer.output_summary_csv()
 
