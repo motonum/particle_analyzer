@@ -23,7 +23,7 @@ class BatchParticleAnalyzer:
         self.particle_analyzers = particle_analyzers
         self.config = config
 
-    def run_analysis(self):
+    def run_analysis(self, strict_tracking: bool = True):
         """登録されているすべてのParticleAnalyzerで解析を実行する"""
         with tqdm(
             total=len(self.particle_analyzers),
@@ -33,7 +33,7 @@ class BatchParticleAnalyzer:
         ) as pbar:
             for analyzer in self.particle_analyzers:
                 pbar.set_description(f"Analyzing '{analyzer.image_interface.filename}.tif'")
-                analyzer.run_analysis()
+                analyzer.run_analysis(strict_tracking=strict_tracking)
                 pbar.update(1)
             pbar.set_description(f"Completed")
             pbar.close()

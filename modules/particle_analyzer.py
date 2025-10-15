@@ -194,7 +194,7 @@ class ParticleAnalyzer:
         self.next_particle_id += 1
         return particle
 
-    def _track_particles(self):
+    def _track_particles(self, strict: bool = True):
         """スライス間で粒子を追跡する
 
         連続する2枚のスライス像を見て、中心が相互最近傍の点であり、半径が大きい方の円の中心座標が、
@@ -208,8 +208,9 @@ class ParticleAnalyzer:
 
         Parameters
         ----------
-        img: MatLike
-            セグメンテーション後の単一画像
+        strict: bool = True
+            Trueのとき、半径が小さい方の円の内部に収まっていれば、同一の粒子由来の像であるとして粒子を追跡する
+            Falseのときはどちらかかの円の中心がもう一方の円の内部に収まっていれば同一粒子とみなす
 
         Returns
         -------
@@ -251,7 +252,11 @@ class ParticleAnalyzer:
                     # 相互最近傍であるか、かつ距離が妥当かをチェック
                     # (この実装は簡略化のため、一方向の最近傍のみチェック)
                     # 距離が両方の半径の小さい方より近ければ同一粒子とみなす
-                    min_radius_threshold = min(circle.radius, prev_particle_info.radius)
+                    min_radius_threshold = (
+                        min(circle.radius, prev_particle_info.radius)
+                        if strict
+                        else max(circle.radius, prev_particle_info.radius)
+                    )
                     if dist[0][0] < min_radius_threshold:
                         particle_id = prev_particle_info.id
                         self.particle_repository[particle_id].add_slice(i, circle.radius, circle.coord)
@@ -367,7 +372,7 @@ class ParticleAnalyzer:
         quantity = hist[mode_index]
         return mode_diameter, quantity
 
-    def run_analysis(self):
+    def run_analysis(self, strict_tracking: bool = True):
         """解析を実行する"""
         # 1. 各スライスの粒子を検出
         for img in tqdm(
@@ -382,7 +387,7 @@ class ParticleAnalyzer:
             self.circles_by_slice.append(circles)
 
         # 2. スライス間で粒子を追跡
-        self.identified_circles_by_slice = self._track_particles()
+        self.identified_circles_by_slice = self._track_particles(strict=strict_tracking)
 
     def output_particle_image(self):
         """セグメンテーション後の画像と検出された粒子を円でフィッティングしたものを色付けして画像として出力する"""
