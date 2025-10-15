@@ -38,7 +38,7 @@ class BatchParticleAnalyzer:
             pbar.set_description(f"Completed")
             pbar.close()
 
-    def output_summary_csv(self, ranges: list[tuple[int | None, int | None]]):
+    def output_summary_csv(self, ranges: list[tuple[int | None, int | None]] = None):
         """登録されているすべてのParticleAnalyzerでサマリーCSVを出力する
 
         Parameters
