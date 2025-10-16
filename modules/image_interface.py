@@ -21,10 +21,10 @@ class ImageInterface:
         return f"{self.OUTPUT_DIR_SEGMENTED}/{self.filename}.tif"
 
     def output_histogram_path(self, z: int | None):
-        return f"{self.OUTPUT_DIR_HISTOGRAM}/{self.filename}-{'full' if z == None else f'z{z}'}.png"
+        return f"{self.OUTPUT_DIR_HISTOGRAM}/{self.filename}-{'full' if z is None else f'z{z}'}.png"
 
     def output_csv_path(self, z: int | None):
-        return f"{self.OUTPUT_DIR_CSV}/{self.filename}-{'full' if z == None else f'z{z}'}.csv"
+        return f"{self.OUTPUT_DIR_CSV}/{self.filename}-{'full' if z is None else f'z{z}'}.csv"
 
     def output_summary_path(self, z: int | None):
-        return f"{self.OUTPUT_DIR_SUMMARY}/{self.filename}-{'full' if z == None else f'z{z}'}.csv"
+        return f"{self.OUTPUT_DIR_SUMMARY}/{self.filename}-{'full' if z is None else f'z{z}'}.csv"
