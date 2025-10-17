@@ -3,3 +3,4 @@ from .particle import Particle
 from .particle_analyzer import ParticleAnalyzer
 from .image_interface import ImageInterface
 from .batch_particle_analyzer import BatchParticleAnalyzer
+from .utils import decode_paths

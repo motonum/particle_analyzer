@@ -401,14 +401,14 @@ class ParticleAnalyzer:
                 cv2.circle(canvas, coord_int, int(c_info.radius), particle.color, cv2.FILLED)
             output_stack.append(canvas)
 
-        if not os.path.exists(self.image_interface.OUTPUT_DIR_DETECTED):
-            os.makedirs(self.image_interface.OUTPUT_DIR_DETECTED)
+        if not os.path.exists(self.image_interface.output_detected_dir):
+            os.makedirs(self.image_interface.output_detected_dir)
 
         cv2.imwritemulti(self.image_interface.output_detected_path, output_stack)
         print(f"Detected particles image saved to {self.image_interface.output_detected_path}")
 
-        if not os.path.exists(self.image_interface.OUTPUT_DIR_SEGMENTED):
-            os.makedirs(self.image_interface.OUTPUT_DIR_SEGMENTED)
+        if not os.path.exists(self.image_interface.output_segmented_dir):
+            os.makedirs(self.image_interface.output_segmented_dir)
 
         cv2.imwritemulti(self.image_interface.output_segmented_path, self.segmented_stack)
         print(f"Segmented particles image saved to {self.image_interface.output_segmented_path}")
@@ -463,8 +463,8 @@ class ParticleAnalyzer:
         plt.ylabel(f"{'Relative' if density else 'Absolute'} Frequency", fontsize=12)
         if ylim:
             plt.ylim(ylim)
-        if not os.path.exists(self.image_interface.OUTPUT_DIR_HISTOGRAM):
-            os.makedirs(self.image_interface.OUTPUT_DIR_HISTOGRAM)
+        if not os.path.exists(self.image_interface.output_histogram_dir):
+            os.makedirs(self.image_interface.output_histogram_dir)
         plt.savefig(self.image_interface.output_histogram_path(target_z))
         print(f"Histogram saved to {self.image_interface.output_histogram_path(target_z)}")
         plt.close()
@@ -495,8 +495,8 @@ class ParticleAnalyzer:
         """
         diameters, target_z = self._get_diameters(z, auto_z)
 
-        if not os.path.exists(self.image_interface.OUTPUT_DIR_CSV):
-            os.makedirs(self.image_interface.OUTPUT_DIR_CSV)
+        if not os.path.exists(self.image_interface.output_csv_dir):
+            os.makedirs(self.image_interface.output_csv_dir)
 
         with open(self.image_interface.output_csv_path(target_z), "w") as f:
             writer = csv.writer(f)
@@ -532,8 +532,8 @@ class ParticleAnalyzer:
         """
         diameters, target_z = self._get_diameters(z, auto_z)
 
-        if not os.path.exists(self.image_interface.OUTPUT_DIR_SUMMARY):
-            os.makedirs(self.image_interface.OUTPUT_DIR_SUMMARY)
+        if not os.path.exists(self.image_interface.output_summary_dir):
+            os.makedirs(self.image_interface.output_summary_dir)
 
         with open(self.image_interface.output_summary_path(target_z), "w") as f:
             writer = csv.writer(f)
