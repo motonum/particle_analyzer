@@ -57,31 +57,44 @@
     ]
     ```
 
-3.  **`"path/to/..."`の部分を、あなたが解析したい画像のファイルの場所（パス）に書き換えます。**
-    カンマ`,`で区切って、解析したい画像をいくつでも追加できます。一つだけでも構いません。
+3.  **`"path/to/..."`の部分を、あなたが解析したい画像の場所（パス）に書き換えます。**
+    ファイルのパスを一つ一つ指定することも、画像が入ったフォルダのパスを指定してまとめて処理することもできます。
 
     **書き換え方の例：**
 
-    *   **Macで、デスクトップにある2つのファイルを解析したい場合**
-        （`your_username`の部分は、ご自身のユーザー名に置き換えてください）
+    *   **ファイルを個別に指定する場合**
+        カンマ`,`で区切って、解析したい画像をいくつでも追加できます。一つだけでも構いません。
 
+        *   **Macの例:**
+            （`your_username`の部分は、ご自身のユーザー名に置き換えてください）
+
+            ```python
+            paths = [
+                "/Users/your_username/Desktop/image1.tif",
+                "/Users/your_username/Desktop/image2.tif",
+            ]
+            ```
+
+        *   **Windowsの例:**
+            （`your_username`の部分は、ご自身のユーザー名に置き換えてください）
+
+            ```python
+            paths = [
+                "C:/Users/your_username/Documents/image_A.tif",
+                "C:/Users/your_username/Documents/image_B.tif",
+            ]
+            ```
+            **（注意：Windowsの場合、パスの区切り文字`\`は`/`に置き換えてください）**
+
+    *   **フォルダをまとめて指定する場合**
+        特定のフォルダの中にある画像（`.tif`または`.tiff`）をすべて解析したい場合は、フォルダのパスを一つだけ指定します。
+        
         ```python
         paths = [
-            "/Users/your_username/Desktop/image1.tif",
-            "/Users/your_username/Desktop/image2.tif",
+            "/Users/your_username/Desktop/my_image_folder",
         ]
         ```
-
-    *   **Windowsで、ドキュメントフォルダにあるファイルを解析したい場合**
-        （`your_username`の部分は、ご自身のユーザー名に置き換えてください）
-
-        ```python
-        paths = [
-            "C:/Users/your_username/Documents/image_A.tif",
-            "C:/Users/your_username/Documents/image_B.tif",
-        ]
-        ```
-        **（注意：Windowsの場合、パスの区切り文字`\`は`/`に置き換えてください）**
+        このように指定すると、プログラムが自動でフォルダの中の画像を探して、すべて解析してくれます。
 
 4.  **ファイルを上書き保存します。**
 
