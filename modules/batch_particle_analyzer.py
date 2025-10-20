@@ -1,6 +1,7 @@
 import math
 from tqdm import tqdm
 
+from modules.stats import Stats
 from modules.particle_analyzer import ParticleAnalyzer, Config
 
 
@@ -40,16 +41,71 @@ class BatchParticleAnalyzer:
             pbar.set_description(f"Completed")
             pbar.close()
 
-    def output_summary_csv(self, ranges: list[tuple[int | None, int | None]] = None):
-        """登録されているすべてのParticleAnalyzerでサマリーCSVを出力する
+    def output_summary_csv(self, ranges: list[tuple[int | None, int | None]] = None, title: str = "batch_summary"):
+        """全画像の統計情報をまとめて1つのCSVファイルとして出力する
+
+        各画像の統計情報（平均値、中央値、標準偏差など）と、
+        指定された範囲内の粒子の個数や割合をまとめたCSVファイルを出力する。
 
         Parameters
         ----------
         ranges : list[tuple[int | None, int | None]]
             集計対象とする直径の範囲を指定するタプルのリスト
+            例: [(None, 10), (10, 20), (20, None)]
+        filename : str = "batch_summary"
+            出力するCSVファイルの名前（拡張子なし）
         """
+        # 出力する統計情報の列名を準備
+        stats_columns = [item.value for item in Stats.get_stats_items()]
+
+        # 範囲指定がある場合の列名を準備
+        range_columns = []
+        if ranges:
+            for min_val, max_val in ranges:
+                range_name = (
+                    f"{min_val if min_val is not None else '0'}" f"-{max_val if max_val is not None else 'inf'}" f"_μm"
+                )
+                range_columns.extend([f"Count_{range_name}", f"Percentage_{range_name}"])
+
+        # ヘッダー行を作成
+        headers = ["Filename"] + stats_columns + range_columns
+
+        # 各画像の統計情報を収集
+        rows = []
         for analyzer in self.particle_analyzers:
-            analyzer.output_summary_csv(ranges)
+            filename = analyzer.image_interface.filename
+            diameters, _ = analyzer._get_diameters()
+
+            # 基本統計量を取得
+            stats = Stats.summary_statistics(diameters)
+            stats_values = [stats[item] for item in Stats.get_stats_items()]
+
+            # 範囲指定がある場合の統計を取得
+            range_values = []
+            if ranges:
+                for min_val, max_val in ranges:
+                    count = Stats.frequency_within_range(diameters, min_val, max_val)
+                    percentage = Stats.frequency_percentage_within_range(diameters, min_val, max_val)
+                    range_values.extend([count, percentage])
+
+            # 1行分のデータを作成
+            row = [filename] + stats_values + range_values
+            rows.append(row)
+
+        # CSVファイルに出力
+        import csv
+        import os
+
+        output_dir = "dist/summary"
+        os.makedirs(output_dir, exist_ok=True)
+        output_path = os.path.join(output_dir, f"{title}.csv")
+
+        with open(output_path, "w", newline="") as f:
+            writer = csv.writer(f)
+            writer.writerow(headers)
+            writer.writerows(rows)
+
+        print(f"Batch summary CSV saved to: {output_path}")
 
     def output_particle_image(self):
         """登録されているすべてのParticleAnalyzerで粒子検出画像を出力する"""
