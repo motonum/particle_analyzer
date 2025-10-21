@@ -1,5 +1,7 @@
 import math
 from tqdm import tqdm
+import csv
+import os
 
 from modules.stats import Stats
 from modules.particle_analyzer import ParticleAnalyzer, Config
@@ -91,10 +93,6 @@ class BatchParticleAnalyzer:
             # 1行分のデータを作成
             row = [filename] + stats_values + range_values
             rows.append(row)
-
-        # CSVファイルに出力
-        import csv
-        import os
 
         output_dir = "dist/summary"
         os.makedirs(output_dir, exist_ok=True)
