@@ -501,7 +501,7 @@ class ParticleAnalyzer:
         with open(self.image_interface.output_csv_path(target_z), "w") as f:
             writer = csv.writer(f)
             header and writer.writerow(["No.", "diameter[um]"])
-            writer.writerows([[i, d] for i, d in enumerate(diameters)])
+            writer.writerows([[i + 1, d] for i, d in enumerate(diameters)])
 
         print(f"CSV saved to {self.image_interface.output_csv_path(target_z)}")
 

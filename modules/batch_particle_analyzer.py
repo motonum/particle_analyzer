@@ -175,15 +175,17 @@ class BatchParticleAnalyzer:
             title = analyzer.image_interface.filename if add_title else ""
             analyzer.plot_diameter_histogram(title, z, auto_z, density, x_range, y_range, bin_width)
 
-    def output_diameter_csv(self, auto_z: bool = True, header: bool = True):
+    def output_diameter_csv(self, z: int | None = None, auto_z: bool = False, header: bool = True):
         """登録されているすべてのParticleAnalyzerで直径の生データCSVを出力する
 
         Parameters
         ----------
+        z : int | None = None
+            直径を取得するzスライスを指定
         auto_z : bool = True
             Trueの場合、粒子が最初に現れるスライスの次のスライスを対象とする
         header : bool = True
             CSVにヘッダーを付けるかどうか
         """
         for analyzer in self.particle_analyzers:
-            analyzer.output_diameter_csv(auto_z, header)
+            analyzer.output_diameter_csv(z, auto_z, header)
