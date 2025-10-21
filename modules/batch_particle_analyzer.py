@@ -94,7 +94,7 @@ class BatchParticleAnalyzer:
             row = [filename] + stats_values + range_values
             rows.append(row)
 
-        output_dir = "dist/summary"
+        output_dir = self.config.OUTPUT_DIR_SUMMARY
         os.makedirs(output_dir, exist_ok=True)
         output_path = os.path.join(output_dir, f"{title}.csv")
 

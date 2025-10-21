@@ -19,3 +19,9 @@ class Config:
 
     # --- 出力設定 ---
     DEFAULT_HISTOGRAM_BIN_WIDTH = 0.5  # ヒストグラムのビン幅（μm）
+
+    OUTPUT_DIR_DETECTED = "dist/detected"
+    OUTPUT_DIR_SEGMENTED = "dist/segmented"
+    OUTPUT_DIR_HISTOGRAM = "dist/histogram"
+    OUTPUT_DIR_CSV = "dist/csv"
+    OUTPUT_DIR_SUMMARY = "dist/summary"
