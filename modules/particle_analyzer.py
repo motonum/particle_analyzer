@@ -270,15 +270,15 @@ class ParticleAnalyzer:
 
         return identified_circles_by_slice
 
-    def _get_diameters(self, z: int | None = None, auto_z: bool = False):
+    def _get_diameters(self, single_z: bool = False, z: int | None = None):
         """粒子の直径のリストを作成する
 
         Parameters
         ----------
+        single_z: bool = False
+            Trueのときは、単一スライスに存在する粒子のみをカウントする
         z: int | None = None
             指定したzスライスに存在する粒子をカウントする(zはone-based)
-        auto_z: bool = False
-            Trueのときは、Stackを下から見ていって最初に円が検出されたスライスの次のスライスをカウント対象とする
 
         Returns
         -------
@@ -293,7 +293,7 @@ class ParticleAnalyzer:
         if z:
             z -= 1
 
-        if auto_z:
+        if single_z and z is None:
             for i, plane in enumerate(self.identified_circles_by_slice):
                 if len(plane):
                     if i + 1 in [k for k, v in enumerate(self.identified_circles_by_slice)]:
@@ -315,22 +315,22 @@ class ParticleAnalyzer:
 
         return diameters, target_z
 
-    def get_max_diameter(self, z: int | None = None, auto_z: bool = False) -> float:
+    def get_max_diameter(self, single_z: bool = False, z: int | None = None) -> float:
         """粒子の最大直径を取得する
 
         Parameters
         ----------
+        single_z: bool = False
+            Trueのときは、単一スライスに存在する粒子のみをカウントする
         z: int | None = None
             指定したzスライスに存在する粒子をカウントする(zはone-based)
-        auto_z: bool = False
-            Trueのときは、Stackを下から見ていって最初に円が検出されたスライスの次のスライスをカウント対象とする
 
         Returns
         -------
         max_diameter: float
             粒子の最大直径(μm)
         """
-        diameters, _ = self._get_diameters(z, auto_z)
+        diameters, _ = self._get_diameters(single_z, z)
         if not diameters:
             return 0.0
         return max(diameters)
@@ -339,8 +339,8 @@ class ParticleAnalyzer:
         self,
         bin_width: float | None = None,
         density: bool = False,
+        single_z: bool = False,
         z: int | None = None,
-        auto_z: bool = False,
     ) -> tuple[float, float]:
         """粒子の最頻値直径を取得する
 
@@ -350,10 +350,10 @@ class ParticleAnalyzer:
             ヒストグラムのビン幅(μm)
         density: bool = False
             Trueのとき、ヒストグラムの縦軸を相対度数とする
+        single_z: bool = False
+            Trueのときは、単一スライスに存在する粒子のみをカウントする
         z: int | None = None
             指定したzスライスに存在する粒子をカウントする(zはone-based)
-        auto_z: bool = False
-            Trueのときは、Stackを下から見ていって最初に円が検出されたスライスの次のスライスをカウント対象とする
 
         Returns
         -------
@@ -362,7 +362,7 @@ class ParticleAnalyzer:
         quantity: float
             最頻値の出現数(個)または相対度数
         """
-        diameters, _ = self._get_diameters(z, auto_z)
+        diameters, _ = self._get_diameters(single_z, z)
         step = self.config.DEFAULT_HISTOGRAM_BIN_WIDTH if not bin_width else bin_width
         bins = math.ceil(max(diameters) / step) + 1
         range = (0.0, int(step * bins))
@@ -416,8 +416,8 @@ class ParticleAnalyzer:
     def plot_diameter_histogram(
         self,
         title="",
+        single_z: bool = False,
         z: int | None = None,
-        auto_z: bool = False,
         density: bool = True,
         xlim: tuple[float, float] | None = None,
         ylim: tuple[float, float] | None = None,
@@ -429,10 +429,10 @@ class ParticleAnalyzer:
         ----------
         title: str = ""
             ヒストグラムの上部に表示するタイトル
+        single_z: bool = False
+            Trueのときは、単一スライスに存在する粒子のみをカウントする
         z: int | None = None
             カウント対象となる粒子の存在zスライスの位置(zはone-based)
-        auto_z: bool = False
-            Trueのときは、Stackを下から見ていって最初に円が検出されたスライスの次のスライスをカウント対象とする
         density: bool = False
             Trueのとき、ヒストグラムの縦軸を相対度数とする
         xlim: tuple[float, float]
@@ -446,7 +446,7 @@ class ParticleAnalyzer:
         -------
         None
         """
-        diameters, target_z = self._get_diameters(z, auto_z)
+        diameters, target_z = self._get_diameters(single_z, z)
 
         if not diameters:
             print("\033[31mNo particles found to plot histogram.\033[0m")
@@ -471,21 +471,21 @@ class ParticleAnalyzer:
 
     def output_diameter_csv(
         self,
+        single_z: bool = False,
         z: int | None = None,
-        auto_z: bool = False,
         header: bool = True,
     ):
         """検出した粒子径のCSVファイルを出力する関数
 
-        与えられたzとauto_zに対応する粒子径のCSVを出力する。
-        zとauto_zがいずれもデフォルト値のとき、zを限定せず全範囲の直径を出力する。
+        与えられたzとsingle_zに対応する粒子径のCSVを出力する。
+        zとsingle_zがいずれもデフォルト値のとき、zを限定せず全範囲の直径を出力する。
 
         Parameters
         ----------
+        single_z: bool = False
+            Trueのときは、単一スライスに存在する粒子のみをカウントする
         z: int | None = None
             カウント対象となる粒子の存在zスライスの位置(zはone-based)
-        auto_z: bool = False
-            Trueのときは、Stackを下から見ていって最初に円が検出されたスライスの次のスライスをカウント対象とする
         header: bool = True
             CSVファイルのヘッダの表示をするかしないか
 
@@ -493,7 +493,7 @@ class ParticleAnalyzer:
         -------
         None
         """
-        diameters, target_z = self._get_diameters(z, auto_z)
+        diameters, target_z = self._get_diameters(single_z, z)
 
         if not os.path.exists(self.image_interface.output_csv_dir):
             os.makedirs(self.image_interface.output_csv_dir)
@@ -508,8 +508,8 @@ class ParticleAnalyzer:
     def output_summary_csv(
         self,
         research_ranges: list[tuple[float | None, float | None]] | None = None,
+        single_z: bool = False,
         z: int | None = None,
-        auto_z: bool = False,
     ):
         """粒子解析のサマリをCSVファイルとして出力する関数
 
@@ -521,16 +521,16 @@ class ParticleAnalyzer:
         research_ranges: list[tuple[float | None, float | None]] | None = None
             粒子径の範囲を指定するタプルのリスト。Noneを指定すると上限・下限なしを意味する。
             例: [(None,5), (5,10), (10,None)]
+        single_z: bool = False
+            Trueのときは、単一スライスに存在する粒子のみをカウントする
         z: int | None = None
             カウント対象となる粒子の存在zスライスの位置(zはone-based)
-        auto_z: bool = False
-            Trueのときは、Stackを下から見ていって最初に円が検出されたスライスの次のスライスをカウント対象とする
 
         Returns
         -------
         None
         """
-        diameters, target_z = self._get_diameters(z, auto_z)
+        diameters, target_z = self._get_diameters(single_z, z)
 
         if not os.path.exists(self.image_interface.output_summary_dir):
             os.makedirs(self.image_interface.output_summary_dir)
@@ -578,8 +578,8 @@ class ParticleAnalyzer:
     def print_summary(
         self,
         research_ranges: list[tuple[float | None, float | None]] | None = None,
+        single_z: bool = False,
         z: int | None = None,
-        auto_z: bool = False,
     ):
         """粒子解析のサマリをコンソールに出力する関数
         直径の平均、標準偏差、最大値、最小値、中央値、全粒子数を出力する。
@@ -590,16 +590,16 @@ class ParticleAnalyzer:
         research_ranges: list[tuple[float | None, float | None]] | None = None
             粒子径の範囲を指定するタプルのリスト。Noneを指定すると上限・下限なしを意味する。
             例: [(None,5), (5,10), (10,None)]
+        single_z: bool = False
+            Trueのときは、単一スライスに存在する粒子のみをカウントする
         z: int | None = None
             カウント対象となる粒子の存在zスライスの位置(zはone-based)
-        auto_z: bool = False
-            Trueのときは、Stackを下から見ていって最初に円が検出されたスライスの次のスライスをカウント対象とする
         Returns
         -------
         None
         """
 
-        diameters, _ = self._get_diameters(z, auto_z)
+        diameters, _ = self._get_diameters(single_z, z)
 
         print("-------")
         print(self.image_interface.filename)
