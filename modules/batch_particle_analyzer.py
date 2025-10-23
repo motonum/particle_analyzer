@@ -180,8 +180,8 @@ class BatchParticleAnalyzer:
 
         Parameters
         ----------
-        single_z : bool = True
-            Trueの場合、粒子が最初に現れるスライスの次のスライスを対象とする
+        single_z : bool = False
+            Trueの場合、単一スライスに存在する粒子を対象とする
         z : int | None = None
             直径を取得するzスライスを指定
         header : bool = True
