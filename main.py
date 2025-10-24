@@ -17,7 +17,7 @@ paths = [
 def main():
     """メイン処理"""
     config = Config()
-    analyzers = [ParticleAnalyzer(config, ImageInterface(path, parent)) for path, parent in decode_paths(paths)]
+    analyzers = [ParticleAnalyzer(config, ImageInterface(config, path, parent)) for path, parent in decode_paths(paths)]
     batch_analyzer = BatchParticleAnalyzer(analyzers, config)
 
     batch_analyzer.run_analysis()
