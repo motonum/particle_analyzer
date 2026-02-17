@@ -373,8 +373,11 @@ class ParticleAnalyzer:
         else:
             bins = math.ceil(max(diameters) / step) + 1
 
-        range = (0.0, int(step * bins))
-        hist, _ = np.histogram(diameters, bins=bins, density=density, range=range)
+        range_ = (0.0, int(step * bins))
+        weights = np.ones(len(diameters)) / len(diameters) if density else None
+        hist, _ = np.histogram(
+            diameters, bins=bins, weights=weights, density=False, range=range_
+        )
         mode_index = np.argmax(hist)
         mode_diameter = (mode_index * step + (mode_index + 1) * step) / 2
         quantity = hist[mode_index]
@@ -475,7 +478,10 @@ class ParticleAnalyzer:
         bins = math.ceil(max_diameter / step) + 1
         x_range = (0, int(step * bins)) if not xlim else xlim
         plt.figure(figsize=(5, 5))
-        _, _, patches = plt.hist(diameters, range=x_range, bins=bins, density=density)
+        weights = np.ones(len(diameters)) / len(diameters) if density else None
+        _, _, patches = plt.hist(
+            diameters, range=x_range, bins=bins, weights=weights, density=False
+        )
 
         if upper_limit is not None:
             # 最後のビンの色を変える
