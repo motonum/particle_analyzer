@@ -136,6 +136,7 @@ class BatchParticleAnalyzer:
         xlim: tuple[float, float] | None = None,
         ylim: tuple[float, float] | None = None,
         bin_width: float | None = None,
+        upper_limit: float | None = None,
     ):
         """全解析結果の直径ヒストグラムを、スケールを統一してプロットする
 
@@ -159,13 +160,21 @@ class BatchParticleAnalyzer:
             ヒストグラムのビン幅 (μm)
         """
         limit_diameter = self.get_max_diameter(single_z, z) if not xlim else xlim[1]
+        if upper_limit is not None:
+            limit_diameter = upper_limit
+
         step = self.config.DEFAULT_HISTOGRAM_BIN_WIDTH if not bin_width else bin_width
         bins = math.ceil(limit_diameter / step)
         x_range = (0, int(step * bins) + step) if not xlim else xlim
 
         # ylimを各画像の最大値に合わせる場合、全画像の最大値を取得
         y_limit = (
-            max([analyzer.calc_mode_bin(step, density, single_z, z)[1] for analyzer in self.particle_analyzers])
+            max(
+                [
+                    analyzer.calc_mode_bin(step, density, single_z, z, upper_limit)[1]
+                    for analyzer in self.particle_analyzers
+                ]
+            )
             if ylim is None
             else ylim[1]
         )
@@ -173,7 +182,9 @@ class BatchParticleAnalyzer:
 
         for analyzer in self.particle_analyzers:
             title = analyzer.image_interface.filename if add_title else ""
-            analyzer.plot_diameter_histogram(title, single_z, z, density, x_range, y_range, bin_width)
+            analyzer.plot_diameter_histogram(
+                title, single_z, z, density, x_range, y_range, bin_width, upper_limit
+            )
 
     def output_diameter_csv(self, single_z: bool = False, z: int | None = None, header: bool = True):
         """登録されているすべてのParticleAnalyzerで直径の生データCSVを出力する

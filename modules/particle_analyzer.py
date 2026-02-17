@@ -341,6 +341,7 @@ class ParticleAnalyzer:
         density: bool = False,
         single_z: bool = False,
         z: int | None = None,
+        upper_limit: float | None = None,
     ) -> tuple[float, float]:
         """粒子の最頻値直径を取得する
 
@@ -364,7 +365,14 @@ class ParticleAnalyzer:
         """
         diameters, _ = self._get_diameters(single_z, z)
         step = self.config.DEFAULT_HISTOGRAM_BIN_WIDTH if not bin_width else bin_width
-        bins = math.ceil(max(diameters) / step) + 1
+
+        if upper_limit is not None:
+            # 指定された制限値を超える値は全て制限値として扱う(最後のビンにまとめる)
+            diameters = [min(d, upper_limit) for d in diameters]
+            bins = math.ceil(upper_limit / step) + 1
+        else:
+            bins = math.ceil(max(diameters) / step) + 1
+
         range = (0.0, int(step * bins))
         hist, _ = np.histogram(diameters, bins=bins, density=density, range=range)
         mode_index = np.argmax(hist)
@@ -422,6 +430,7 @@ class ParticleAnalyzer:
         xlim: tuple[float, float] | None = None,
         ylim: tuple[float, float] | None = None,
         bin_width: float | None = None,
+        upper_limit: float | None = None,
     ):
         """粒子の直径のヒストグラムをプロットする
 
@@ -451,20 +460,55 @@ class ParticleAnalyzer:
         if not diameters:
             print("\033[31mNo particles found to plot histogram.\033[0m")
             return
+        plt.rcParams["font.size"] = 15
 
-        max_diameter = max(diameters) if not xlim else xlim[1]
         step = self.config.DEFAULT_HISTOGRAM_BIN_WIDTH if not bin_width else bin_width
+
+        if upper_limit is not None:
+            diameters = [min(d, upper_limit) for d in diameters]
+            # upper_limitが設定されている場合、最大値はupper_limitになる想定だが
+            # ビン計算のためにmax_diameterを設定
+            max_diameter = upper_limit
+        else:
+            max_diameter = max(diameters) if not xlim else xlim[1]
+
         bins = math.ceil(max_diameter / step) + 1
         x_range = (0, int(step * bins)) if not xlim else xlim
-        plt.hist(diameters, range=x_range, bins=bins, density=density)
+        plt.figure(figsize=(5, 5))
+        _, _, patches = plt.hist(diameters, range=x_range, bins=bins, density=density)
+
+        if upper_limit is not None:
+            # 最後のビンの色を変える
+            if patches:
+                patches[-1].set_facecolor("red")
+
+            tick_step = upper_limit // 5
+            ticks = np.arange(0, upper_limit + 1, tick_step)
+
+            if ticks[-1] != upper_limit:
+                ticks = np.append(ticks, upper_limit)
+
+            plt.xticks(ticks)
+
+            # ラベルの修正
+            current_locs, current_labels = plt.xticks()
+            new_labels = []
+            for loc in current_locs:
+                if math.isclose(loc, upper_limit):
+                    new_labels.append(f"≥{int(loc)}")
+                else:
+                    new_labels.append(f"{int(loc)}")
+            plt.xticks(current_locs, new_labels)
+
         if title:
-            plt.title(title, fontsize=14)
-        plt.xlabel("Diameter (μm)", fontsize=12)
-        plt.ylabel(f"{'Relative' if density else 'Absolute'} Frequency", fontsize=12)
+            plt.title(title, fontsize=18)
+        plt.xlabel("Diameter (μm)", fontsize=18)
+        plt.ylabel(f"{'Relative' if density else 'Absolute'} Frequency", fontsize=18)
         if ylim:
             plt.ylim(ylim)
         if not os.path.exists(self.image_interface.output_histogram_dir):
             os.makedirs(self.image_interface.output_histogram_dir)
+        plt.tight_layout()
         plt.savefig(self.image_interface.output_histogram_path(target_z))
         print(f"Histogram saved to {self.image_interface.output_histogram_path(target_z)}")
         plt.close()
@@ -609,6 +653,7 @@ class ParticleAnalyzer:
         print("中央値: ", np.median(diameters))
         print("最小値: ", min(diameters))
         print("最大値: ", max(diameters))
+        print("四分位範囲: ", np.percentile(diameters, 0.75) - np.percentile(diameters, 0.25))
 
         if research_ranges is not None:
             for r in research_ranges:
