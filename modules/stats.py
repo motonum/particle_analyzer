@@ -13,6 +13,9 @@ class Stats:
         STD_DEVIATION = "Standard Deviation"
         MIN = "Min"
         MAX = "Max"
+        IQR1 = "IQR1"
+        IQR3 = "IQR3"
+        CV = "CV"
 
     @staticmethod
     def mean(data: list[float]) -> float:
@@ -48,6 +51,15 @@ class Stats:
     def percentile(data: list[float], percent: float) -> float:
         """パーセンタイルを計算する"""
         return np.percentile(data, percent) if data else 0.0
+
+    @staticmethod
+    def iqr1(data: list[float]) -> float:
+        """パーセンタイルを計算する"""
+        return np.percentile(data, 25)
+
+    def iqr3(data: list[float]) -> float:
+        """パーセンタイルを計算する"""
+        return np.percentile(data, 75)
 
     @staticmethod
     def frequency_within_range(data: list[float], min_val: float | None, max_val: float | None) -> int:
@@ -105,6 +117,16 @@ class Stats:
         return quantity, bin_range
 
     @staticmethod
+    def cv(data: list[float]):
+        """変動係数を計算する"""
+        if not data:
+            return 0.0
+        mean = Stats.mean(data)
+        if mean == 0:
+            return 0.0
+        return Stats.std_deviation(data) / mean
+
+    @staticmethod
     def summary_statistics(data: list[float]) -> dict[StatsItem, float]:
         """データの基本統計量を計算する"""
         return {
@@ -114,6 +136,9 @@ class Stats:
             Stats.StatsItem.STD_DEVIATION: Stats.std_deviation(data),
             Stats.StatsItem.MIN: Stats.min(data),
             Stats.StatsItem.MAX: Stats.max(data),
+            Stats.StatsItem.IQR1: Stats.iqr1(data),
+            Stats.StatsItem.IQR3: Stats.iqr3(data),
+            Stats.StatsItem.CV: Stats.cv(data),
         }
 
     # 統計量のenumの一覧のリストを取得する
