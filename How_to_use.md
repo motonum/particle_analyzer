@@ -209,6 +209,8 @@ Pythonのコードを直接編集するため、少し慎重に作業を行っ�
 *   **`density=True/False`**:
     *   `True` (デフォルト): 縦軸を「相対度数（全体に対する割合）」で表示します。
     *   `False`: 縦軸を「粒子の個数」で表示します。
+*   **`add_title=True/False`**: グラフの上部に画像名を表示するかどうか（デフォルトはTrue）。
+*   **`upper_limit=数値`**: ヒストグラム計算上の最大直径の上限を指定します（xlimとは別に計算に使用される場合があります）。
 
 **記述例:**
 ```python
@@ -217,9 +219,6 @@ Pythonのコードを直接編集するため、少し慎重に作業を行っ�
 batch_analyzer.plot_diameter_histogram(xlim=(0, 10), ylim=(0, 0.5), bin_width=0.2, add_title=False)
 ```
 
-その他のオプション（上級者向け）:
-*   **`add_title=True/False`**: グラフの上部に画像名を表示するかどうか（デフォルトはTrue）。
-*   **`upper_limit=数値`**: ヒストグラム計算上の最大直径の上限を指定します（xlimとは別に計算に使用される場合があります）。
 
 #### 特定のサイズの粒子を数える (`output_summary_csv`)
 
