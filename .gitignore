@@ -4,3 +4,5 @@ dist
 assets
 **/__pycache__/**
 .vscode
+calc.py
+local.py
